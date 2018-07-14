@@ -95,57 +95,63 @@ optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
 correct_pred = tf.equal(tf.argmax(pred, 1), tf.argmax(y, 1))
 accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
 
+
+def fetch_all():
+    list = os.listdir("./resize_image/")
+    all_xs = []
+    all_ys = []
+    for image in list:
+        id_tag = image.find("-")
+        score = image[0:id_tag]
+        # print(score)
+        img = Image.open("./resize_image/" + image)
+        img_ndarray = numpy.asarray(img, dtype='float32')
+        img_ndarray = numpy.reshape(img_ndarray, [128, 128, 3])
+        # print(img_ndarray.shape)
+        batch_x = img_ndarray
+        all_xs.append(batch_x)
+        # print(batch_xs)
+        batch_y = numpy.asarray([0, 0, 0, 0, 0])
+        # print(type(score))
+        batch_y[int(score) - 1] = 1
+        # print(batch_y)
+        batch_y = numpy.reshape(batch_y, [5, ])
+        all_ys.append(batch_y)
+    # print(batch_ys)
+    all_xs = numpy.asarray(all_xs)
+    print(all_xs.shape)
+    all_ys = numpy.asarray(all_ys)
+    print(all_ys.shape)
+    return all_xs, all_ys
+
+
+def fetch_batch(xs, ys):
+    batch_id = numpy.random.randint(0, 20)
+    batch_xs = xs[batch_id:batch_id + 12]
+    batch_ys = ys[batch_id:batch_id + 12]
+    return batch_xs, batch_ys
+
 # Initializing the variables
 init = tf.global_variables_initializer()
 saver = tf.train.Saver()
 
+
 # Launch the graph
 with tf.Session() as sess:
     sess.run(init)
-    step = 1
-    # Keep training until reach max iterations
-    list = os.listdir("./resize_image/")
-    print(list)
-    print(len(list))
-    count = 0
-    while count < 10:
-        count = count + 1
-        print("count:", count)
-        for batch_id in range(0, 4):
-            batch = list[batch_id:batch_id + 1]
-            batch_xs = []
-            batch_ys = []
-            for image in batch:
-                id_tag = image.find("-")
-                score = image[0:id_tag]
-                # print(score)
-                img = Image.open("./resize_image/" + image)
-                img_ndarray = numpy.asarray(img, dtype='float32')
-                img_ndarray = numpy.reshape(img_ndarray, [128, 128, 3])
-                # print(img_ndarray.shape)
-                batch_x = img_ndarray
-                batch_xs.append(batch_x)
-                # print(batch_xs)
-                batch_y = numpy.asarray([0, 0, 0, 0, 0])
-                # print(type(score))
-                batch_y[int(score) - 1] = 1
-                # print(batch_y)
-                batch_y = numpy.reshape(batch_y, [5, ])
-                batch_ys.append(batch_y)
-            # print(batch_ys)
-            batch_xs = numpy.asarray(batch_xs)
-            print(batch_xs.shape)
-            batch_ys = numpy.asarray(batch_ys)
-            print(batch_ys.shape)
 
-            sess.run(optimizer, feed_dict={x: batch_xs, y: batch_ys})
-            if step % 3 == 0:
-                # Calculate batch loss and accuracy
-                loss, acc = sess.run([cost, accuracy], feed_dict={x: batch_xs,
-                                                                  y: batch_ys})
-                print("Iter " + str(step * batch_size) + ", Minibatch Loss= " +
-                      "{:.6f}".format(loss) + ", Training Accuracy= " +
-                      "{:.5f}".format(acc))
-            step += 1
+    xs, ys = fetch_all()
+
+    for i in range(50):
+        batch_xs, batch_ys = fetch_batch(xs, ys)
+        sess.run(optimizer, feed_dict={x: batch_xs, y: batch_ys})
+        if i % 2 == 0:
+            # Calculate batch loss and accuracy
+            loss, acc = sess.run([cost, accuracy], feed_dict={x: batch_xs,
+                                                              y: batch_ys})
+            print("step " + str(i) + ", Minibatch Loss= " +
+                  "{:.6f}".format(loss) + ", Training Accuracy= " +
+                  "{:.5f}".format(acc))
+
     print("Optimization Finished!")
     saver.save(sess, "./model/model.ckpt")
