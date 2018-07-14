@@ -9,11 +9,10 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 learning_rate = 0.001
 training_iters = 3000
 batch_size = 10
-display_step = 3
 
 # Network Parameters
 n_input = 128 * 128  # MNIST data input (img shape: 128*128 )
-n_classes = 10  # MNIST total classes (0-9 digits)
+n_classes = 5  # MNIST total classes (0-9 digits)
 dropout = 0.75  # Dropout, probability to keep units
 
 # tf Graph input
@@ -59,7 +58,7 @@ def conv_net(x, weights, biases, dropout):
     fc1 = tf.add(tf.matmul(fc1, weights['wd1']), biases['bd1'])
     fc1 = tf.nn.relu(fc1)
     # Apply Dropout
-    fc1 = tf.nn.dropout(fc1, dropout)
+    # fc1 = tf.nn.dropout(fc1, dropout)
 
     # Output, class prediction
     out = tf.add(tf.matmul(fc1, weights['out']), biases['out'])
@@ -112,8 +111,8 @@ with tf.Session() as sess:
     while count < 10:
         count = count + 1
         print("count:", count)
-        for batch_id in range(0, 12):
-            batch = list[batch_id * 10:batch_id * 10 + 10]
+        for batch_id in range(0, 4):
+            batch = list[batch_id:batch_id + 1]
             batch_xs = []
             batch_ys = []
             for image in batch:
@@ -127,11 +126,11 @@ with tf.Session() as sess:
                 batch_x = img_ndarray
                 batch_xs.append(batch_x)
                 # print(batch_xs)
-                batch_y = numpy.asarray([0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+                batch_y = numpy.asarray([0, 0, 0, 0, 0])
                 # print(type(score))
                 batch_y[int(score) - 1] = 1
                 # print(batch_y)
-                batch_y = numpy.reshape(batch_y, [10, ])
+                batch_y = numpy.reshape(batch_y, [5, ])
                 batch_ys.append(batch_y)
             # print(batch_ys)
             batch_xs = numpy.asarray(batch_xs)
@@ -139,15 +138,13 @@ with tf.Session() as sess:
             batch_ys = numpy.asarray(batch_ys)
             print(batch_ys.shape)
 
-            sess.run(optimizer, feed_dict={x: batch_xs, y: batch_ys,
-                                           keep_prob: dropout})
-            if step % display_step == 0:
+            sess.run(optimizer, feed_dict={x: batch_xs, y: batch_ys})
+            if step % 3 == 0:
                 # Calculate batch loss and accuracy
                 loss, acc = sess.run([cost, accuracy], feed_dict={x: batch_xs,
-                                                                  y: batch_ys,
-                                                                  keep_prob: 1.})
-                print("Iter " + str(step * batch_size) + ", Minibatch Loss= " + \
-                      "{:.6f}".format(loss) + ", Training Accuracy= " + \
+                                                                  y: batch_ys})
+                print("Iter " + str(step * batch_size) + ", Minibatch Loss= " +
+                      "{:.6f}".format(loss) + ", Training Accuracy= " +
                       "{:.5f}".format(acc))
             step += 1
     print("Optimization Finished!")
